@@ -1,0 +1,53 @@
+import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate, Link } from 'react-router-dom'
+
+export default function Register() {
+  const { register } = useAuth()
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ username: '', email: '', password: '', password2: '' })
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    try {
+      await register(form.username, form.email, form.password, form.password2)
+      navigate('/dashboard')
+    } catch (err) {
+      const data = err.response?.data
+      setError(typeof data === 'object' ? Object.values(data).flat().join(' ') : 'Registration failed')
+    }
+  }
+
+  return (
+    <div style={styles.wrapper}>
+      <div style={styles.card}>
+        <h2 style={styles.title}>Create account</h2>
+        {error && <div style={styles.error}>{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <input style={styles.input} placeholder="Username" value={form.username}
+            onChange={e => setForm({ ...form, username: e.target.value })} required />
+          <input style={styles.input} type="email" placeholder="Email" value={form.email}
+            onChange={e => setForm({ ...form, email: e.target.value })} required />
+          <input style={styles.input} type="password" placeholder="Password" value={form.password}
+            onChange={e => setForm({ ...form, password: e.target.value })} required />
+          <input style={styles.input} type="password" placeholder="Confirm Password" value={form.password2}
+            onChange={e => setForm({ ...form, password2: e.target.value })} required />
+          <button style={styles.btn} type="submit">Create Account</button>
+        </form>
+        <p style={styles.link}>Already have an account? <Link to="/login">Sign in</Link></p>
+      </div>
+    </div>
+  )
+}
+
+const styles = {
+  wrapper: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f2f5' },
+  card: { background: '#fff', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' },
+  title: { margin: 0, fontSize: '1.8rem', fontWeight: 700, color: '#1a1a2e' },
+  input: { display: 'block', width: '100%', padding: '0.75rem 1rem', marginBottom: '1rem', border: '1.5px solid #ddd', borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' },
+  btn: { width: '100%', padding: '0.85rem', background: '#6c63ff', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' },
+  error: { background: '#fee', color: '#c00', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' },
+  link: { textAlign: 'center', marginTop: '1rem', color: '#666' }
+}
