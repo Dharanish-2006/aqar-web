@@ -5,7 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'https://aqar-014n.onrender.com/',
+      '/api':  'https://aqar-014n.onrender.com',
+      '/form': 'https://aqar-014n.onrender.com',
     },
   },
 })

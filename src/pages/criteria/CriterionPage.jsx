@@ -57,10 +57,10 @@ export default function CriterionPage({ criterionKey, onToast }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12 }}>
         {[
-          { label: 'Total Metrics', value: total, color: '#64748b' },
-          { label: 'Qualitative (QlM)', value: qlmCount, color: '#a78bfa' },
+          { label: 'Total Metrics',      value: total,    color: '#64748b' },
+          { label: 'Qualitative (QlM)',  value: qlmCount, color: '#a78bfa' },
           { label: 'Quantitative (QnM)', value: qnmCount, color: '#38bdf8' },
-          { label: 'Completed', value: done, color },
+          { label: 'Completed',          value: done,     color },
         ].map(({ label, value, color: c }) => (
           <Card key={label} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: '#475569', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{label}</span>
@@ -69,7 +69,7 @@ export default function CriterionPage({ criterionKey, onToast }) {
         ))}
       </div>
 
-      {/* Validation summary */}
+      {/* Incomplete list */}
       {done < total && (
         <div style={{
           background: '#0a1520', border: '1px solid #1e3a5f',
@@ -94,7 +94,6 @@ export default function CriterionPage({ criterionKey, onToast }) {
         </div>
       )}
 
-      {/* Metric cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {metrics.map(metric => (
           <MetricCard
@@ -103,9 +102,13 @@ export default function CriterionPage({ criterionKey, onToast }) {
             response={responses[metric.id] || {}}
             color={color}
             onChange={(val) => updateResponse(metric.id, val)}
-            onSave={() => {
-              saveResponse(metric.id)
-              onToast(`Metric ${metric.id} saved successfully`, 'success')
+            onSave={async () => {
+              const result = await saveResponse(metric.id, metric.type)
+              if (result?.success) {
+                onToast(`Metric ${metric.id} saved ✓`, 'success')
+              } else {
+                onToast(`Failed to save ${metric.id}`, 'error')
+              }
             }}
           />
         ))}

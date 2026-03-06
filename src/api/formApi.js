@@ -4,15 +4,14 @@ export const fetchAllResponses = () =>
 
 export const saveMetricResponse = (metricId, metricType, payload) =>
   api.post('/form/response/save/', {
-    metric_id:    metricId,
-    metric_type:  metricType,
-    saved:        true,
+    metric_id:   metricId,
+    metric_type: metricType,
+    saved:       true,
     ...payload,
   }).then(r => r.data)
 
 export const deleteMetricResponse = (metricId) =>
   api.delete(`/form/response/${encodeURIComponent(metricId)}/`)
-
 
 export const uploadDocument = (metricId, file) => {
   const fd = new FormData()
@@ -29,13 +28,11 @@ export const fetchDocuments = (metricId) =>
 export const deleteDocument = (docId) =>
   api.delete(`/form/document/${docId}/`)
 
-
 export const fetchSettings = () =>
   api.get('/form/settings/').then(r => r.data)
 
 export const saveSettings = (data) =>
   api.post('/form/settings/', data).then(r => r.data)
-
 
 export const fetchCompletion = () =>
   api.get('/form/completion/').then(r => r.data)
