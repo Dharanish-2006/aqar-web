@@ -1,18 +1,20 @@
+import { useResponses } from '../../context/ResponseContext'
 import { YEARS } from '../../utils/naacData'
 import FileUpload from './FileUpload'
 import { Button } from '../ui'
 
 export default function QnMForm({ metric, response, onChange, onSave, color }) {
-  const data = response.data || {}
+  const { uploadFile, removeDocument } = useResponses()
 
+  const data   = response.data || {}
   const values = YEARS.map(y => ({ year: y, val: data[y] ?? '' }))
-  const hasData = values.some(v => v.val !== '')
+  const hasData   = values.some(v => v.val !== '')
   const negatives = values.filter(v => v.val !== '' && parseFloat(v.val) < 0)
-  const hasNeg = negatives.length > 0
-  const canSave = hasData && !hasNeg
+  const hasNeg    = negatives.length > 0
+  const canSave   = hasData && !hasNeg
 
   const total = values.reduce((s, v) => s + (parseFloat(v.val) || 0), 0)
-  const avg = hasData
+  const avg   = hasData
     ? (total / values.filter(v => v.val !== '').length).toFixed(2)
     : 0
 
@@ -39,18 +41,13 @@ export default function QnMForm({ metric, response, onChange, onSave, color }) {
           </thead>
           <tbody>
             {values.map(({ year, val }) => {
-              const num = parseFloat(val)
-              const isNeg = val !== '' && num < 0
+              const num     = parseFloat(val)
+              const isNeg   = val !== '' && num < 0
               const isValid = val !== '' && !isNeg
-
               return (
                 <tr key={year} style={{ borderBottom: '1px solid #0f172a' }}>
                   <td style={{ padding: '10px 16px' }}>
-                    <span style={{
-                      fontFamily: 'monospace', fontSize: 13,
-                      background: '#0a1929', padding: '5px 12px',
-                      borderRadius: 6, color: '#94a3b8',
-                    }}>{year}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 13, background: '#0a1929', padding: '5px 12px', borderRadius: 6, color: '#94a3b8' }}>{year}</span>
                   </td>
                   <td style={{ padding: '8px 16px' }}>
                     <input
@@ -86,13 +83,10 @@ export default function QnMForm({ metric, response, onChange, onSave, color }) {
 
       {/* Stats */}
       {hasData && (
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr',
-          gap: 10,
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[
-            { label: 'Total (Sum)', value: total.toLocaleString() },
-            { label: `Average / Year`, value: avg },
+            { label: 'Total (Sum)',     value: total.toLocaleString() },
+            { label: 'Average / Year', value: avg },
           ].map(({ label, value }) => (
             <div key={label} style={{
               background: '#060d18', border: `1px solid ${color}30`,
@@ -106,22 +100,17 @@ export default function QnMForm({ metric, response, onChange, onSave, color }) {
         </div>
       )}
 
-      {/* Error */}
       {hasNeg && (
-        <div style={{
-          background: '#1a0000', border: '1px solid #991b1b',
-          borderRadius: 8, padding: '8px 14px',
-          fontSize: 12, color: '#fca5a5',
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-        }}>
-          ✕ Negative values are not allowed. Please correct the highlighted fields.
+        <div style={{ background: '#1a0000', border: '1px solid #991b1b', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#fca5a5', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          ✕ Negative values are not allowed.
         </div>
       )}
 
-      {/* File upload */}
+      {/* File upload — directly calls backend */}
       <FileUpload
         documents={response.documents || []}
-        onChange={docs => onChange({ ...response, documents: docs, saved: false })}
+        onUpload={(file) => uploadFile(metric.id, file)}
+        onRemove={(docId, isServerDoc) => removeDocument(metric.id, docId, isServerDoc)}
         accentColor={color}
       />
 
@@ -136,14 +125,10 @@ export default function QnMForm({ metric, response, onChange, onSave, color }) {
           {response.saved ? '✓ Saved' : 'Save Response'}
         </Button>
         {!hasData && (
-          <span style={{ fontSize: 12, color: '#475569', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            Enter at least one year's data to save
-          </span>
+          <span style={{ fontSize: 12, color: '#475569', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Enter at least one year's data to save</span>
         )}
         {response.saved && (
-          <span style={{ fontSize: 12, color: '#22c55e', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            ✓ Response saved
-          </span>
+          <span style={{ fontSize: 12, color: '#22c55e', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✓ Response saved</span>
         )}
       </div>
     </div>

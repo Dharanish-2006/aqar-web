@@ -1,3 +1,4 @@
+import { useResponses } from '../../context/ResponseContext'
 import { countWords } from '../../utils/naacData'
 import FileUpload from './FileUpload'
 import { ProgressBar, Button } from '../ui'
@@ -6,14 +7,16 @@ const MIN_WORDS = 100
 const MAX_WORDS = 200
 
 export default function QlMForm({ metric, response, onChange, onSave, color }) {
-  const text = response.text || ''
+  const { uploadFile, removeDocument } = useResponses()
+
+  const text  = response.text || ''
   const words = countWords(text)
   const tooShort = words < MIN_WORDS && text.length > 0
-  const tooLong = words > MAX_WORDS
-  const empty = text.length === 0
-  const valid = words >= MIN_WORDS && words <= MAX_WORDS
+  const tooLong  = words > MAX_WORDS
+  const empty    = text.length === 0
+  const valid    = words >= MIN_WORDS && words <= MAX_WORDS
 
-  const pct = Math.min((words / MAX_WORDS) * 100, 100)
+  const pct      = Math.min((words / MAX_WORDS) * 100, 100)
   const barColor = tooLong ? '#ef4444' : valid ? '#22c55e' : color
 
   const wordStatus = empty
@@ -31,7 +34,7 @@ export default function QlMForm({ metric, response, onChange, onSave, color }) {
         <textarea
           value={text}
           onChange={e => onChange({ ...response, text: e.target.value, saved: false })}
-          placeholder={`Describe ${metric.title} in 100–200 words. Include specific examples, outcomes, and evidence of implementation...`}
+          placeholder={`Describe ${metric.title} in 100–200 words...`}
           style={{
             width: '100%', minHeight: 180, background: '#060d18',
             border: `1.5px solid ${tooLong ? '#ef4444' : valid ? '#16a34a' : empty ? '#1e293b' : color + '60'}`,
@@ -61,30 +64,22 @@ export default function QlMForm({ metric, response, onChange, onSave, color }) {
         </div>
       </div>
 
-      {/* Validation hints */}
       {tooShort && (
-        <div style={{
-          background: '#1a0e00', border: '1px solid #92400e', borderRadius: 8,
-          padding: '8px 14px', fontSize: 12, color: '#fbbf24',
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-        }}>
+        <div style={{ background: '#1a0e00', border: '1px solid #92400e', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#fbbf24', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
           ⚠ Need at least {MIN_WORDS - words} more word{MIN_WORDS - words !== 1 ? 's' : ''} to meet the minimum requirement.
         </div>
       )}
       {tooLong && (
-        <div style={{
-          background: '#1a0000', border: '1px solid #991b1b', borderRadius: 8,
-          padding: '8px 14px', fontSize: 12, color: '#fca5a5',
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-        }}>
-          ✕ Text exceeds the 200-word maximum by {words - MAX_WORDS} word{words - MAX_WORDS !== 1 ? 's' : ''}. Please trim your description.
+        <div style={{ background: '#1a0000', border: '1px solid #991b1b', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#fca5a5', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          ✕ Text exceeds the 200-word maximum by {words - MAX_WORDS} word{words - MAX_WORDS !== 1 ? 's' : ''}. Please trim.
         </div>
       )}
 
-      {/* File upload */}
+      {/* File upload — directly calls backend */}
       <FileUpload
         documents={response.documents || []}
-        onChange={docs => onChange({ ...response, documents: docs, saved: false })}
+        onUpload={(file) => uploadFile(metric.id, file)}
+        onRemove={(docId, isServerDoc) => removeDocument(metric.id, docId, isServerDoc)}
         accentColor={color}
       />
 
@@ -99,14 +94,10 @@ export default function QlMForm({ metric, response, onChange, onSave, color }) {
           {response.saved ? '✓ Saved' : 'Save Response'}
         </Button>
         {valid && !response.saved && (
-          <span style={{ fontSize: 12, color: '#64748b', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            Unsaved changes
-          </span>
+          <span style={{ fontSize: 12, color: '#64748b', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Unsaved changes</span>
         )}
         {response.saved && (
-          <span style={{ fontSize: 12, color: '#22c55e', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            ✓ Response saved
-          </span>
+          <span style={{ fontSize: 12, color: '#22c55e', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>✓ Response saved</span>
         )}
       </div>
     </div>

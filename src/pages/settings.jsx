@@ -7,17 +7,23 @@ import { useNavigate } from 'react-router-dom'
 const YEARS_OPTS = ['2021-22', '2022-23', '2023-24', '2024-25']
 
 export default function Settings({ onToast }) {
-  const { collegeName, setCollegeName, aqarYear, setAqarYear } = useResponses()
+  const { collegeName, aqarYear, saveCollegeSettings } = useResponses()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   const [name, setName] = useState(collegeName)
   const [year, setYear] = useState(aqarYear)
+  const [saving, setSaving] = useState(false)
 
-  const saveSettings = () => {
-    setCollegeName(name)
-    setAqarYear(year)
-    onToast('Settings saved!', 'success')
+  const handleSave = async () => {
+    setSaving(true)
+    const result = await saveCollegeSettings(name, year)
+    setSaving(false)
+    if (result?.success) {
+      onToast('Settings saved!', 'success')
+    } else {
+      onToast('Failed to save settings — please try again.', 'error')
+    }
   }
 
   const handleLogout = () => { logout(); navigate('/login') }
@@ -74,8 +80,8 @@ export default function Settings({ onToast }) {
             </select>
           </div>
 
-          <Button onClick={saveSettings} style={{ alignSelf: 'flex-start' }}>
-            Save Settings
+          <Button onClick={handleSave} disabled={saving} style={{ alignSelf: 'flex-start' }}>
+            {saving ? 'Saving…' : 'Save Settings'}
           </Button>
         </div>
       </Card>

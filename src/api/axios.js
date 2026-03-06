@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/api' })
+const BACKEND = 'https://aqar-014n.onrender.com'
+
+const api = axios.create({ baseURL: `${BACKEND}/api` })
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('access')
@@ -15,7 +17,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('refresh')
       if (refresh) {
         try {
-          const { data } = await axios.post('/api/auth/refresh/', { refresh })
+          const { data } = await axios.post(`${BACKEND}/api/auth/refresh/`, { refresh })
           localStorage.setItem('access', data.access)
           err.config.headers.Authorization = `Bearer ${data.access}`
           return api(err.config)
