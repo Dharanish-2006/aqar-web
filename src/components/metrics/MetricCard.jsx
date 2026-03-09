@@ -1,86 +1,168 @@
-import { useState } from 'react'
-import { Badge } from '../ui'
-import { isMetricComplete } from '../../utils/naacData'
-import QlMForm from './QlMForm'
-import QnMForm from './QnMForm'
+import { useState } from "react";
+import TableForm from "./TableForm";
 
-export default function MetricCard({ metric, response, onChange, onSave, color }) {
-  const [open, setOpen] = useState(false)
-  const complete = isMetricComplete(metric, response)
-  const docCount = response?.documents?.length || 0
+export default function MetricCard({
+  metric,
+  response,
+  color,
+  onChange,
+  onSave,
+}) {
+  const [open, setOpen] = useState(false);
+
+  const isDone = response?.rows?.length > 0;
+  const rowCount = response?.rows?.length || 0;
 
   return (
-    <div style={{
-      background: '#0a1520',
-      border: `1px solid ${open ? color + '50' : complete ? '#1a3a1a' : '#162032'}`,
-      borderRadius: 12, overflow: 'hidden',
-      transition: 'border-color .2s',
-      boxShadow: open ? `0 4px 20px ${color}15` : 'none',
-    }}>
-      {/* Header */}
+    <div
+      style={{
+        background: "#0a1520",
+        border: `1px solid ${open ? color + "50" : isDone ? "#1a3a1a" : "#1e293b"}`,
+        borderRadius: 12,
+        overflow: "hidden",
+        transition: "border-color .2s",
+      }}
+    >
+      {/* Header row */}
       <div
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((o) => !o)}
         style={{
-          padding: '15px 20px',
-          display: 'flex', alignItems: 'center', gap: 14,
-          cursor: 'pointer', userSelect: 'none',
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "14px 18px",
+          cursor: "pointer",
+          background: open ? `${color}08` : "transparent",
+          userSelect: "none",
         }}
       >
         {/* Status dot */}
-        <div style={{
-          width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
-          background: complete ? '#22c55e' : open ? color : '#334155',
-          boxShadow: complete ? '0 0 8px #22c55e80' : open ? `0 0 6px ${color}60` : 'none',
-          transition: 'all .3s',
-        }} />
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            flexShrink: 0,
+            background: isDone ? "#22c55e" : "#334155",
+            boxShadow: isDone ? "0 0 6px #22c55e80" : "none",
+          }}
+        />
 
-        {/* Info */}
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 12, color, fontWeight: 700 }}>
-              {metric.id}
-            </span>
-            <Badge type={metric.type} />
-            {complete && (
-              <span style={{ fontSize: 10, color: '#22c55e', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                ✓ Complete
-              </span>
-            )}
-            {docCount > 0 && (
-              <span style={{ fontSize: 10, color: '#64748b', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                📎 {docCount} doc{docCount > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-          <p style={{
-            margin: 0, fontSize: 13, color: '#94a3b8',
-            fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.4,
-          }}>
-            {metric.title}
-          </p>
-        </div>
+        {/* Metric ID badge */}
+        <span
+          style={{
+            fontFamily: "monospace",
+            fontSize: 11,
+            fontWeight: 700,
+            background: `${color}15`,
+            color: color,
+            border: `1px solid ${color}30`,
+            borderRadius: 5,
+            padding: "2px 8px",
+            flexShrink: 0,
+          }}
+        >
+          {metric.id}
+        </span>
+
+        {/* Title */}
+        <span
+          style={{
+            flex: 1,
+            fontSize: 13,
+            color: open ? "#f1f5f9" : "#94a3b8",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: open ? 600 : 400,
+          }}
+        >
+          {metric.title}
+        </span>
+
+        {/* Record count pill */}
+        {rowCount > 0 && (
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: 10,
+              background: "#14532d",
+              color: "#4ade80",
+              borderRadius: 10,
+              padding: "2px 8px",
+            }}
+          >
+            {rowCount} row{rowCount !== 1 ? "s" : ""}
+          </span>
+        )}
+
+        {/* Column count */}
+        <span
+          style={{
+            fontSize: 10,
+            color: "#334155",
+            fontFamily: "monospace",
+            marginRight: 4,
+          }}
+        >
+          {metric.columns.length} cols
+        </span>
 
         {/* Chevron */}
-        <span style={{
-          color: '#334155', fontSize: 18, flexShrink: 0,
-          transform: open ? 'rotate(180deg)' : 'none',
-          transition: 'transform .2s',
-        }}>⌄</span>
+        <span
+          style={{
+            fontSize: 10,
+            color: "#475569",
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform .2s",
+          }}
+        >
+          ▼
+        </span>
       </div>
 
-      {/* Body */}
+      {/* Expandable body */}
       {open && (
-        <div style={{
-          padding: '0 20px 20px',
-          borderTop: `1px solid ${color}20`,
-        }}>
-          <div style={{ height: 18 }} />
-          {metric.type === 'QlM'
-            ? <QlMForm metric={metric} response={response || { text: '', documents: [] }} onChange={onChange} onSave={onSave} color={color} />
-            : <QnMForm metric={metric} response={response || { data: {}, documents: [] }} onChange={onChange} onSave={onSave} color={color} />
-          }
+        <div
+          style={{
+            padding: "0 18px 18px",
+            borderTop: `1px solid ${color}20`,
+          }}
+        >
+          {/* Column list hint */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 5,
+              padding: "10px 0 14px",
+            }}
+          >
+            {metric.columns.map((c) => (
+              <span
+                key={c.key}
+                style={{
+                  fontSize: 10,
+                  fontFamily: "monospace",
+                  background: "#0f172a",
+                  color: "#475569",
+                  border: "1px solid #1e293b",
+                  borderRadius: 4,
+                  padding: "1px 7px",
+                }}
+              >
+                {c.key}
+              </span>
+            ))}
+          </div>
+
+          <TableForm
+            metric={metric}
+            response={response}
+            onChange={onChange}
+            onSave={onSave}
+            color={color}
+          />
         </div>
       )}
     </div>
-  )
+  );
 }

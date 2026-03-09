@@ -16,8 +16,7 @@ export default function CriterionPage({ criterionKey, onToast }) {
   const { done, total, pct } = getCriterionCompletion(criterion, responses)
   const { color, icon, label, subtitle, metrics } = criterion
 
-  const qlmCount = metrics.filter(m => m.type === 'QlM').length
-  const qnmCount = metrics.filter(m => m.type === 'QnM').length
+  const totalRows = metrics.reduce((s, m) => s + (responses[m.id]?.rows?.length || 0), 0)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -46,7 +45,7 @@ export default function CriterionPage({ criterionKey, onToast }) {
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: 'monospace', fontSize: 28, color, fontWeight: 800 }}>{pct}%</div>
           <div style={{ fontSize: 12, color: '#475569', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            {done} of {total} complete
+            {done} of {total} metrics filled
           </div>
         </div>
       </div>
@@ -57,19 +56,18 @@ export default function CriterionPage({ criterionKey, onToast }) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12 }}>
         {[
-          { label: 'Total Metrics',      value: total,    color: '#64748b' },
-          { label: 'Qualitative (QlM)',  value: qlmCount, color: '#a78bfa' },
-          { label: 'Quantitative (QnM)', value: qnmCount, color: '#38bdf8' },
-          { label: 'Completed',          value: done,     color },
-        ].map(({ label, value, color: c }) => (
-          <Card key={label} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: '#475569', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{label}</span>
+          { label: 'Total Metrics',  value: total,     color: '#64748b' },
+          { label: 'Metrics Filled', value: done,      color },
+          { label: 'Total Rows',     value: totalRows, color: '#38bdf8' },
+          { label: 'Remaining',      value: total - done, color: total - done > 0 ? '#f97316' : '#22c55e' },
+        ].map(({ label: l, value, color: c }) => (
+          <Card key={l} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: '#475569', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{l}</span>
             <span style={{ fontFamily: 'monospace', fontSize: 18, color: c, fontWeight: 700 }}>{value}</span>
           </Card>
         ))}
       </div>
 
-      {/* Incomplete list */}
       {done < total && (
         <div style={{
           background: '#0a1520', border: '1px solid #1e3a5f',
@@ -79,7 +77,7 @@ export default function CriterionPage({ criterionKey, onToast }) {
           <span style={{ fontSize: 16, flexShrink: 0 }}>📋</span>
           <div>
             <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 4 }}>
-              Incomplete Metrics
+              Metrics with no records yet
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {metrics.filter(m => !isMetricComplete(m, responses[m.id])).map(m => (
@@ -99,11 +97,11 @@ export default function CriterionPage({ criterionKey, onToast }) {
           <MetricCard
             key={metric.id}
             metric={metric}
-            response={responses[metric.id] || {}}
+            response={responses[metric.id] || { rows: [], documents: [], saved: false }}
             color={color}
             onChange={(val) => updateResponse(metric.id, val)}
             onSave={async () => {
-              const result = await saveResponse(metric.id, metric.type)
+              const result = await saveResponse(metric.id)
               if (result?.success) {
                 onToast(`Metric ${metric.id} saved ✓`, 'success')
               } else {

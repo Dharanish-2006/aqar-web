@@ -9,7 +9,7 @@ import { useAuth } from "./AuthContext";
 import { initResponses } from "../utils/naacData";
 import {
   fetchAllResponses,
-  saveMetricResponse,
+  saveMetricRows,
   uploadDocument,
   deleteDocument,
   fetchSettings,
@@ -33,25 +33,21 @@ export function ResponseProvider({ children }) {
     setSyncError(null);
 
     Promise.all([fetchAllResponses(), fetchSettings()])
-      .then(([serverResponses, serverSettings]) => {
-        if (serverResponses?.length) {
+      .then(([serverData, serverSettings]) => {
+        if (serverData && typeof serverData === "object") {
           setResponses((prev) => {
             const next = { ...prev };
-            serverResponses.forEach((r) => {
-              next[r.metric_id] = {
-                text: r.text || "",
-                data: r.numeric_data || {},
-                documents: (r.documents || []).map((d) => ({
-                  id: d.id,
-                  name: d.original_name,
-                  size: d.file_size,
-                  ext: d.extension,
-                  url: d.url,
-                  fromServer: true,
-                })),
-                saved: r.saved,
-                dbId: r.id,
-              };
+            Object.entries(serverData).forEach(([metricId, rows]) => {
+              if (Array.isArray(rows) && rows.length > 0) {
+                next[metricId] = {
+                  ...prev[metricId],
+                  rows: rows.map((row, i) => ({
+                    ...row,
+                    _id: row._id || row.id || Date.now() + i,
+                  })),
+                  saved: true,
+                };
+              }
             });
             return next;
           });
@@ -74,22 +70,19 @@ export function ResponseProvider({ children }) {
     }));
   }, []);
 
-  // ── Save one metric to DB ────────────────────────────────────────────────
   const saveResponse = useCallback(
-    async (metricId, metricType) => {
+    async (metricId) => {
       const current = responses[metricId];
       if (!current) return { success: false };
 
-      const payload =
-        metricType === "QlM"
-          ? { text: current.text || "", numeric_data: {} }
-          : { text: "", numeric_data: current.data || {} };
+      // Strip frontend-only _id before sending
+      const rows = (current.rows || []).map(({ _id, ...rest }) => rest);
 
       try {
-        const saved = await saveMetricResponse(metricId, metricType, payload);
+        await saveMetricRows(metricId, rows);
         setResponses((prev) => ({
           ...prev,
-          [metricId]: { ...prev[metricId], saved: true, dbId: saved.id },
+          [metricId]: { ...prev[metricId], saved: true },
         }));
         return { success: true };
       } catch (err) {
@@ -162,6 +155,9 @@ export function ResponseProvider({ children }) {
       0,
     );
 
+  const getTotalRows = () =>
+    Object.values(responses).reduce((s, r) => s + (r?.rows?.length || 0), 0);
+
   return (
     <ResponseContext.Provider
       value={{
@@ -176,6 +172,7 @@ export function ResponseProvider({ children }) {
         setAqarYear,
         saveCollegeSettings,
         getTotalDocs,
+        getTotalRows,
         loading,
         syncError,
       }}
