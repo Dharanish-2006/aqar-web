@@ -6,7 +6,7 @@ export const countWords = (text = '') =>
 const C1_METRICS = [
   {
     id: '1.1', title: 'Courses Offered Across All Programs',
-    type: 'TBL', modelKey: 'Metric_1_1',
+    type: 'TBL', modelKey: 'Metric_1_1',  
     columns: [
       col('program_code', 'Program Code'),
       col('program_name', 'Program Name'),
@@ -40,7 +40,7 @@ const C1_METRICS = [
     docRequired: false,
   },
   {
-    id: '1.2.2', title: 'Add-on / Certificate Programs & Student Enrolment',
+    id: '1.2.2 , 1.2.3', title: 'Add-on / Certificate Programs & Student Enrolment',
     type: 'TBL', modelKey: 'Metric_1_2_2_1_2_3',
     columns: [
       col('program_name', 'Program Name'),
