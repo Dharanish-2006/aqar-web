@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Spinner } from '../components/ui'
 
 export default function Login() {
   const { login } = useAuth()
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ username: '', password: '' })
-  const [error, setError] = useState('')
+  const navigate   = useNavigate()
+  const [form,    setForm]    = useState({ username: '', password: '' })
+  const [error,   setError]   = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -26,15 +26,13 @@ export default function Login() {
 
   return (
     <div style={s.page}>
-      {/* Background mesh */}
       <div style={s.mesh} />
-
       <div style={s.card}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={s.logo}>🎓</div>
-          <h1 style={s.title}>NAAC AQAR Assistant</h1>
-          <p style={s.sub}>Sign in to your IQAC portal</p>
+          <h1 style={s.title}>NAAC AQAR Portal</h1>
+          <p style={s.sub}>Sign in with your IQAC credentials</p>
         </div>
 
         {error && (
@@ -51,7 +49,7 @@ export default function Login() {
               value={form.username}
               onChange={e => setForm({ ...form, username: e.target.value })}
               placeholder="Enter your username"
-              required
+              required autoFocus
               onFocus={e => e.target.style.borderColor = '#6366f1'}
               onBlur={e => e.target.style.borderColor = '#1e293b'}
             />
@@ -59,8 +57,7 @@ export default function Login() {
           <div>
             <label style={s.label}>Password</label>
             <input
-              style={s.input}
-              type="password"
+              style={s.input} type="password"
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               placeholder="••••••••"
@@ -69,18 +66,22 @@ export default function Login() {
               onBlur={e => e.target.style.borderColor = '#1e293b'}
             />
           </div>
-
           <button type="submit" disabled={loading} style={s.btn}>
             {loading ? <Spinner size={18} /> : 'Sign In'}
           </button>
         </form>
 
-        <p style={s.link}>
-          Don't have an account?{' '}
-          <Link to="/register" style={{ color: '#818cf8', fontWeight: 600, textDecoration: 'none' }}>
-            Register
-          </Link>
-        </p>
+        {/* Info note — no register link */}
+        <div style={{
+          marginTop: 24, padding: '12px 16px',
+          background: '#060d18', border: '1px solid #1e293b',
+          borderRadius: 8, textAlign: 'center',
+        }}>
+          <p style={{ margin: 0, fontSize: 12, color: '#475569', fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.6 }}>
+            Account access is provided by the AQAR Cell Head.<br />
+            Contact your administrator if you need an account.
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -101,8 +102,8 @@ const s = {
   card: {
     position: 'relative', zIndex: 1,
     width: 400, background: '#0a1520',
-    border: '1px solid #1e3a5f',
-    borderRadius: 20, padding: '40px 36px',
+    border: '1px solid #1e3a5f', borderRadius: 20,
+    padding: '40px 36px',
     boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
   },
   logo: {
@@ -112,23 +113,17 @@ const s = {
     fontSize: 30, margin: '0 auto 14px',
     boxShadow: '0 8px 24px #4f46e540',
   },
-  title: {
-    margin: '0 0 6px', fontSize: 22, color: '#f1f5f9', fontWeight: 800,
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
-  },
-  sub: { margin: 0, color: '#475569', fontSize: 13 },
+  title: { margin: '0 0 6px', fontSize: 22, color: '#f1f5f9', fontWeight: 800 },
+  sub:   { margin: 0, color: '#475569', fontSize: 13 },
   label: {
     display: 'block', fontSize: 11, color: '#64748b',
-    marginBottom: 6, letterSpacing: 0.5, textTransform: 'uppercase',
-    fontWeight: 600,
+    marginBottom: 6, letterSpacing: 0.5, textTransform: 'uppercase', fontWeight: 600,
   },
   input: {
     width: '100%', padding: '11px 14px',
     background: '#060d18', border: '1.5px solid #1e293b',
-    borderRadius: 9, color: '#e2e8f0',
-    fontSize: 14, outline: 'none',
-    boxSizing: 'border-box',
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    borderRadius: 9, color: '#e2e8f0', fontSize: 14, outline: 'none',
+    boxSizing: 'border-box', fontFamily: "'Plus Jakarta Sans', sans-serif",
     transition: 'border-color .2s',
   },
   btn: {
@@ -138,8 +133,7 @@ const s = {
     fontWeight: 700, fontSize: 15, marginTop: 4,
     boxShadow: '0 4px 14px #4f46e540',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
-    transition: 'opacity .2s',
+    fontFamily: "'Plus Jakarta Sans', sans-serif", transition: 'opacity .2s',
   },
   error: {
     background: '#1a0000', border: '1px solid #7f1d1d',
@@ -147,5 +141,4 @@ const s = {
     color: '#fca5a5', fontSize: 13,
     display: 'flex', alignItems: 'center', gap: 8,
   },
-  link: { textAlign: 'center', marginTop: 20, marginBottom: 0, color: '#475569', fontSize: 13 },
 }

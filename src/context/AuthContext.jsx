@@ -4,7 +4,7 @@ import api from '../api/axios'
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -12,7 +12,10 @@ export function AuthProvider({ children }) {
     if (token) {
       api.get('/auth/profile/')
         .then(r => setUser(r.data))
-        .catch(() => { localStorage.removeItem('access'); localStorage.removeItem('refresh') })
+        .catch(() => {
+          localStorage.removeItem('access')
+          localStorage.removeItem('refresh')
+        })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
@@ -28,22 +31,17 @@ export function AuthProvider({ children }) {
     return profile.data
   }
 
-  const register = async (username, email, password, password2) => {
-    const { data } = await api.post('/auth/register/', { username, email, password, password2 })
-    localStorage.setItem('access', data.access)
-    localStorage.setItem('refresh', data.refresh)
-    setUser(data.user)
-    return data.user
-  }
-
   const logout = () => {
     localStorage.removeItem('access')
     localStorage.removeItem('refresh')
     setUser(null)
   }
 
+  const isAdmin = user?.role === 'admin'
+  const isHOD   = user?.role === 'hod'
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, isAdmin, isHOD }}>
       {children}
     </AuthContext.Provider>
   )

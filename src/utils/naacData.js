@@ -236,13 +236,13 @@ const C3_METRICS = [
     ],
     docRequired: false,
   },
-  {
+   {
     id: '3.3.2', title: 'Research Papers in UGC-Listed Journals',
     type: 'TBL', modelKey: 'Metric_3_3_2',
     columns: [
       col('paper_title', 'Title of Paper'),
       col('authors', 'Author(s)', 'textarea'),
-      col('department', 'Department'),
+      col('dept_name', 'Department'),
       col('journal_name', 'Journal Name'),
       col('year', 'Year of Publication'),
       col('issn', 'ISSN Number'),
