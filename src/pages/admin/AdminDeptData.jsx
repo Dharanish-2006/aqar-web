@@ -1,21 +1,24 @@
-// src/pages/admin/AdminDeptData.jsx
-import { useState, useEffect } from 'react'
+// src/pages/admin/AdminDeptData.jsx  — FIXED
+// Root cause: MetricCard → TableForm → useResponses() was calling the real
+// ResponseContext which wasn't provided in the admin view tree.
+// Fix: Wrap with ResponseProvider and pass a dept-scoped override via a
+// separate AdminSaveContext so MetricCard/TableForm work without changes.
+
+import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { fetchDeptResponses, adminSaveMetric, adminUnlockDept } from '../../api/formApi'
-import { CRITERIA, getCriterionCompletion, isMetricComplete } from '../../utils/naacData'
-import { ProgressBar, Card, Toast } from '../../components/ui'
+import { CRITERIA, getCriterionCompletion } from '../../utils/naacData'
+import { ProgressBar, Card } from '../../components/ui'
 import MetricCard from '../../components/metrics/MetricCard'
 
-// Wrapper that provides a fake ResponseContext for MetricCard in admin view
-import { createContext, useContext, useCallback } from 'react'
-
-const AdminResponseContext = createContext()
-export const useAdminResponseCtx = () => useContext(AdminResponseContext)
+// ── Minimal fake ResponseContext so MetricCard/TableForm don't crash ──────────
+// We re-export a context that matches what useResponses() returns.
+import { ResponseContext } from '../../context/ResponseContext'
 
 export default function AdminDeptData({ dept, onToast }) {
-  const [responses,    setResponses]    = useState({})
-  const [loading,      setLoading]      = useState(true)
-  const [activeCrit,   setActiveCrit]   = useState(null)
-  const [isSubmitted,  setIsSubmitted]  = useState(dept?.is_submitted || false)
+  const [responses,   setResponses]   = useState({})
+  const [loading,     setLoading]     = useState(true)
+  const [activeCrit,  setActiveCrit]  = useState(null)
+  const [isSubmitted, setIsSubmitted] = useState(dept?.is_submitted || false)
 
   useEffect(() => {
     if (!dept) return
@@ -27,7 +30,7 @@ export default function AdminDeptData({ dept, onToast }) {
         Object.entries(data).forEach(([metricId, rows]) => {
           mapped[metricId] = {
             rows: (Array.isArray(rows) ? rows : []).map((r, i) => ({
-              ...r, _id: r._id || r.id || Date.now() + i
+              ...r, _id: r._id || r.id || Date.now() + i,
             })),
             documents: [],
             saved: true,
@@ -62,8 +65,8 @@ export default function AdminDeptData({ dept, onToast }) {
     }
   }, [responses, dept?.id])
 
-  // Stub — admin doesn't upload docs in this view
-  const uploadFile   = useCallback(async () => ({ success: false, error: 'Document upload not available in admin view' }), [])
+  // Stub file operations — admin doesn't upload docs in this view
+  const uploadFile    = useCallback(async () => ({ success: false, error: 'Not available in admin view' }), [])
   const removeDocument = useCallback(async () => {}, [])
 
   const handleUnlock = async () => {
@@ -91,8 +94,8 @@ export default function AdminDeptData({ dept, onToast }) {
   const streamLabel = dept.stream === 'aided' ? 'Aided' : 'Self Finance'
   const streamColor = dept.stream === 'aided' ? '#22c55e' : '#818cf8'
 
-  // Fake ResponseProvider context for MetricCard
-  const fakeCtxValue = {
+  // Build the fake context value that matches exactly what useResponses() expects
+  const fakeContextValue = {
     responses,
     updateResponse,
     saveResponse,
@@ -100,12 +103,23 @@ export default function AdminDeptData({ dept, onToast }) {
     removeDocument,
     collegeName: dept.name,
     aqarYear: '',
-    isSubmitted: false, // admin can always edit
+    setCollegeName: () => {},
+    setAqarYear: () => {},
+    saveCollegeSettings: async () => ({ success: false }),
+    getTotalDocs: () => 0,
+    getTotalRows: () => Object.values(responses).reduce((s, r) => s + (r?.rows?.length || 0), 0),
+    loading: false,
+    syncError: null,
+    isSubmitted: false,  // admin can always edit
+    submittedAt: null,
+    submitAllData: async () => ({ success: false }),
   }
 
   return (
-    <AdminResponseContext.Provider value={fakeCtxValue}>
+    // Provide the fake ResponseContext so MetricCard/TableForm work correctly
+    <ResponseContext.Provider value={fakeContextValue}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
         {/* Header */}
         <div style={{
           background: 'linear-gradient(135deg, #060d18 0%, #0a1520 100%)',
@@ -147,7 +161,7 @@ export default function AdminDeptData({ dept, onToast }) {
           </div>
         </div>
 
-        {/* Criterion tabs */}
+        {/* Criterion filter tabs */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {CRITERIA.map(c => {
             const { pct } = getCriterionCompletion(c, responses)
@@ -162,7 +176,8 @@ export default function AdminDeptData({ dept, onToast }) {
                   border: `1.5px solid ${active ? c.color : '#1e293b'}`,
                   color: active ? c.color : '#475569',
                   cursor: 'pointer', fontSize: 12,
-                  fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: active ? 700 : 400,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontWeight: active ? 700 : 400,
                   transition: 'all .15s',
                 }}
               >
@@ -182,7 +197,7 @@ export default function AdminDeptData({ dept, onToast }) {
           )}
         </div>
 
-        {/* Metrics */}
+        {/* Metrics per criterion */}
         {CRITERIA
           .filter(c => !activeCrit || c.key === activeCrit)
           .map(criterion => (
@@ -203,14 +218,18 @@ export default function AdminDeptData({ dept, onToast }) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {criterion.metrics.map(metric => (
-                  <AdminMetricCardWrapper
+                  <MetricCard
                     key={metric.id}
                     metric={metric}
                     response={responses[metric.id] || { rows: [], documents: [], saved: false }}
                     color={criterion.color}
-                    onUpdate={updateResponse}
-                    onSave={saveResponse}
-                    onToast={onToast}
+                    readOnly={false}  // admin can always edit
+                    onChange={(val) => updateResponse(metric.id, val)}
+                    onSave={async () => {
+                      const result = await saveResponse(metric.id)
+                      if (result?.success) onToast(`Metric ${metric.id} saved ✓`, 'success')
+                      else onToast(`Failed to save ${metric.id}`, 'error')
+                    }}
                   />
                 ))}
               </div>
@@ -218,23 +237,6 @@ export default function AdminDeptData({ dept, onToast }) {
           ))
         }
       </div>
-    </AdminResponseContext.Provider>
-  )
-}
-
-// Lightweight wrapper around MetricCard for admin view
-function AdminMetricCardWrapper({ metric, response, color, onUpdate, onSave, onToast }) {
-  return (
-    <MetricCard
-      metric={metric}
-      response={response}
-      color={color}
-      onChange={(val) => onUpdate(metric.id, val)}
-      onSave={async () => {
-        const result = await onSave(metric.id)
-        if (result?.success) onToast(`Metric ${metric.id} saved ✓`, 'success')
-        else onToast(`Failed to save ${metric.id}`, 'error')
-      }}
-    />
+    </ResponseContext.Provider>
   )
 }

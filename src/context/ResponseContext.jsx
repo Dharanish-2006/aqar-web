@@ -8,7 +8,7 @@ import {
   fetchSubmissionStatus, submitData,
 } from '../api/formApi'
 
-const ResponseContext = createContext()
+export const ResponseContext = createContext()
 
 export function ResponseProvider({ children }) {
   const { user, isHOD } = useAuth()
